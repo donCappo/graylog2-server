@@ -34,10 +34,12 @@ import com.google.common.net.InetAddresses;
 import org.apache.commons.lang3.StringUtils;
 import org.graylog.failure.FailureCause;
 import org.graylog.failure.ProcessingFailureCause;
+import org.graylog2.configuration.ElasticsearchConfiguration;
 import org.graylog2.indexer.IndexSet;
 import org.graylog2.indexer.messages.Indexable;
 import org.graylog2.plugin.streams.Stream;
 import org.graylog2.plugin.utilities.date.DateTimeConverter;
+import org.graylog2.shared.bindings.GuiceInjectorHolder;
 import org.graylog2.shared.utilities.ExceptionUtils;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
@@ -172,6 +174,11 @@ public class Message implements Messages, Indexable {
      * Will be set to the ID of the input that received the message.
      */
     public static final String FIELD_GL2_SOURCE_INPUT = "gl2_source_input";
+
+    /*
+     * Will be set to the id of the forwarder input that was used to receive this message from the forwarder
+     */
+    public static final String FIELD_GL2_FORWARDER_INPUT = "gl2_forwarder_input";
 
     /**
      * Will be set to the ID of the node that received the message.
@@ -393,6 +400,8 @@ public class Message implements Messages, Indexable {
 
     @Override
     public Map<String, Object> toElasticSearchObject(ObjectMapper objectMapper, @Nonnull final Meter invalidTimestampMeter) {
+        final ElasticsearchConfiguration elasticsearchConfiguration =
+            GuiceInjectorHolder.getInjector().getInstance(ElasticsearchConfiguration.class);
         final Map<String, Object> obj = Maps.newHashMapWithExpectedSize(REQUIRED_FIELDS.size() + fields.size());
 
         for (Map.Entry<String, Object> entry : fields.entrySet()) {
@@ -400,11 +409,11 @@ public class Message implements Messages, Indexable {
             if (key.equals(FIELD_ID)) {
                 continue;
             }
-
             final Object value = entry.getValue();
-            // Elasticsearch does not allow "." characters in keys since version 2.0.
+            // Elasticsearch does not allow "." characters in keys from versions 2.0 to 5.0 (excluded).
             // See: https://www.elastic.co/guide/en/elasticsearch/reference/2.0/breaking_20_mapping_changes.html#_field_names_may_not_contain_dots
-            if (key.contains(".")) {
+            // See: https://www.elastic.co/guide/en/elasticsearch/reference/5.0/release-notes-5.0.0.html#enhancement-5.0.0
+            if (key.contains(".") && elasticsearchConfiguration.getReplaceDotsInFieldNames()) {
                 final String newKey = key.replace('.', KEY_REPLACEMENT_CHAR);
 
                 // If the message already contains the transformed key, we skip the field and emit a warning.

@@ -55,6 +55,8 @@ import java.util.Optional;
 @SuppressWarnings("FieldMayBeFinal")
 public class Configuration extends BaseConfiguration {
     private static final Logger LOG = LoggerFactory.getLogger(Configuration.class);
+    public static final String TRANSPORT_CERTIFICATE_PASSWORD_PROPERTY = "transport_certificate_password";
+    public static final String HTTP_CERTIFICATE_PASSWORD_PROPERTY = "http_certificate_password";
 
     @Parameter(value = "installation_source", validator = StringNotBlankValidator.class)
     private String installationSource = "unknown";
@@ -83,8 +85,11 @@ public class Configuration extends BaseConfiguration {
     @Parameter(value = "opensearch_config_location")
     private String opensearchConfigLocation = "config";
 
+    @Parameter(value = "config_location")
+    private String configLocation;
+
     @Parameter(value = "process_logs_buffer_size")
-    private Integer logs = 500;
+    private Integer opensearchProcessLogsBufferSize = 500;
 
 
     @Parameter(value = "node_name")
@@ -106,14 +111,14 @@ public class Configuration extends BaseConfiguration {
     @Parameter(value = "transport_certificate")
     private String datanodeTransportCertificate = "datanode-transport-certificates.p12";
 
-    @Parameter(value = "transport_certificate_password")
-    private String datanodeTransportCertificatePassword = null;
+    @Parameter(value = TRANSPORT_CERTIFICATE_PASSWORD_PROPERTY)
+    private String datanodeTransportCertificatePassword;
 
     @Parameter(value = "http_certificate")
     private String datanodeHttpCertificate = "datanode-http-certificates.p12";
 
-    @Parameter(value = "http_certificate_password")
-    private String datanodeHttpCertificatePassword = null;
+    @Parameter(value = HTTP_CERTIFICATE_PASSWORD_PROPERTY)
+    private String datanodeHttpCertificatePassword;
 
     @Parameter(value = "stale_leader_timeout", validators = PositiveIntegerValidator.class)
     private Integer staleLeaderTimeout = 2000;
@@ -156,6 +161,10 @@ public class Configuration extends BaseConfiguration {
         return opensearchConfigLocation;
     }
 
+    public String getConfigLocation() {
+        return configLocation;
+    }
+
     public String getOpensearchDataLocation() {
         return opensearchDataLocation;
     }
@@ -165,7 +174,7 @@ public class Configuration extends BaseConfiguration {
     }
 
     public Integer getProcessLogsBufferSize() {
-        return logs;
+        return opensearchProcessLogsBufferSize;
     }
 
     @Parameter(value = "rest_api_username")

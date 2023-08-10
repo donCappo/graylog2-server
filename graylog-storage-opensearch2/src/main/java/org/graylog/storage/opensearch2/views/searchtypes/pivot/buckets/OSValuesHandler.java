@@ -62,7 +62,10 @@ public class OSValuesHandler extends OSPivotBucketSpecHandler<Values> {
 
     @Inject
     public OSValuesHandler(@DetectedSearchVersion SearchVersion version) {
-        this.supportsMultiTerms = version.satisfies(SearchVersion.Distribution.OPENSEARCH, ">=2.2.0");
+        this.supportsMultiTerms =
+                version.satisfies(SearchVersion.Distribution.OPENSEARCH, ">=2.2.0") ||
+                version.satisfies(SearchVersion.Distribution.DATANODE, ">=5.2.0");
+
     }
 
     @Nonnull
@@ -181,7 +184,7 @@ public class OSValuesHandler extends OSPivotBucketSpecHandler<Values> {
             return ImmutableList.of((String)key);
         }
 
-        return ImmutableList.of(String.valueOf(key));
+        return ImmutableList.of(bucket.getKeyAsString());
     }
 
     private ImmutableList<String> splitKeys(String keys) {

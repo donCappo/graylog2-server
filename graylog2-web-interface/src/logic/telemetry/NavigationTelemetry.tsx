@@ -16,6 +16,7 @@
  */
 import { useEffect } from 'react';
 
+import { getPathnameWithoutId } from 'util/URLUtils';
 import useLocation from 'routing/useLocation';
 import useSendTelemetry from 'logic/telemetry/useSendTelemetry';
 
@@ -25,7 +26,9 @@ const NavigationTelemetry = () => {
 
   useEffect(() => {
     if (location.pathname) {
-      sendTelemetry('$pageview', {});
+      sendTelemetry('$pageview', {
+        app_pathname: getPathnameWithoutId(location.pathname),
+      });
     }
   }, [location.pathname, sendTelemetry]);
 

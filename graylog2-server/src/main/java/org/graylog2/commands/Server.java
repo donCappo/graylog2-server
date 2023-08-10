@@ -80,6 +80,7 @@ import org.graylog2.indexer.IndexerBindings;
 import org.graylog2.indexer.retention.RetentionStrategyBindings;
 import org.graylog2.indexer.rotation.RotationStrategyBindings;
 import org.graylog2.inputs.transports.NettyTransportConfiguration;
+import org.graylog2.lookup.adapters.dnslookup.DnsLookupAdapterConfiguration;
 import org.graylog2.messageprocessors.MessageProcessorModule;
 import org.graylog2.migrations.MigrationsModule;
 import org.graylog2.notifications.Notification;
@@ -113,6 +114,9 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import static org.graylog2.audit.AuditEventTypes.NODE_SHUTDOWN_INITIATE;
+import static org.graylog2.plugin.ServerStatus.Capability.CLOUD;
+import static org.graylog2.plugin.ServerStatus.Capability.MASTER;
+import static org.graylog2.plugin.ServerStatus.Capability.SERVER;
 
 @Command(name = "server", description = "Start the Graylog server")
 public class Server extends ServerBootstrap {
@@ -133,8 +137,9 @@ public class Server extends ServerBootstrap {
     private final PrometheusExporterConfiguration prometheusExporterConfiguration = new PrometheusExporterConfiguration();
     private final TLSProtocolsConfiguration tlsConfiguration = new TLSProtocolsConfiguration();
     private final GeoIpProcessorConfig geoIpProcessorConfig = new GeoIpProcessorConfig();
-
     private final TelemetryConfiguration telemetryConfiguration = new TelemetryConfiguration();
+    private final DnsLookupAdapterConfiguration dnsLookupAdapterConfiguration = new DnsLookupAdapterConfiguration();
+
     @Option(name = {"-l", "--local"}, description = "Run Graylog in local mode. Only interesting for Graylog developers.")
     private boolean local = false;
 
@@ -217,7 +222,8 @@ public class Server extends ServerBootstrap {
                 prometheusExporterConfiguration,
                 tlsConfiguration,
                 geoIpProcessorConfig,
-                telemetryConfiguration);
+                telemetryConfiguration,
+                dnsLookupAdapterConfiguration);
     }
 
     @Override
@@ -285,12 +291,18 @@ public class Server extends ServerBootstrap {
 
     @Override
     protected Set<ServerStatus.Capability> capabilities() {
+        final EnumSet<ServerStatus.Capability> capabilities = EnumSet.of(SERVER);
+
         if (configuration.isLeader()) {
             //noinspection deprecation
-            return EnumSet.of(ServerStatus.Capability.SERVER, ServerStatus.Capability.MASTER);
-        } else {
-            return EnumSet.of(ServerStatus.Capability.SERVER);
+            capabilities.add(MASTER);
         }
+
+        if (configuration.isCloud()) {
+            capabilities.add(CLOUD);
+        }
+
+        return capabilities;
     }
 
     private static class ShutdownHook implements Runnable {

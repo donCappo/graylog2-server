@@ -21,22 +21,31 @@ import org.graylog.testing.completebackend.apis.GraylogApis;
 import org.graylog.testing.containermatrix.annotations.ContainerMatrixTest;
 import org.graylog.testing.containermatrix.annotations.ContainerMatrixTestsConfiguration;
 import org.graylog2.shared.rest.resources.csp.CSP;
+import org.graylog2.shared.rest.resources.csp.CSPResources;
 import org.graylog2.shared.rest.resources.csp.CSPResponseFilter;
 import org.hamcrest.Matchers;
+
+import java.util.regex.Pattern;
 
 import static io.restassured.RestAssured.given;
 
 @ContainerMatrixTestsConfiguration(serverLifecycle = Lifecycle.CLASS, withMailServerEnabled = true)
 public class FiltersIT {
+    private static final String DEFAULT_CONNECT_SRC = "connect-src 'self' https://telemetry.graylog.cloud;";
     private final GraylogApis api;
+    private final CSPResources cspResources;
+    private final Pattern defaultCSPPattern;
 
     public FiltersIT(GraylogApis api) {
         this.api = api;
+        this.cspResources = new CSPResources();
+        this.defaultCSPPattern = Pattern.compile(Pattern.quote(DEFAULT_CONNECT_SRC + cspResources.cspString(CSP.DEFAULT))
+                .replaceAll("\\{nonce}", "\\\\E[a-zA-Z0-9-]+\\\\Q"));
     }
 
     @ContainerMatrixTest
     void cspDocumentationBrowser() {
-        String expected = CSP.CSP_SWAGGER;
+        String expected = cspResources.cspString(CSP.SWAGGER);
         given()
                 .spec(api.requestSpecification())
                 .when()
@@ -44,12 +53,11 @@ public class FiltersIT {
                 .then()
                 .statusCode(200)
                 .assertThat().header(CSPResponseFilter.CSP_HEADER,
-                        Matchers.equalTo(expected));
+                        Matchers.containsString(expected));
     }
 
     @ContainerMatrixTest
     void cspWebInterfaceAssets() {
-        String expected = CSP.CSP_DEFAULT;
         given()
                 .spec(api.requestSpecification())
                 .basePath("/")
@@ -58,12 +66,11 @@ public class FiltersIT {
                 .then()
                 .statusCode(200)
                 .assertThat().header(CSPResponseFilter.CSP_HEADER,
-                        Matchers.equalTo(expected));
+                        Matchers.matchesPattern(defaultCSPPattern));
     }
 
     @ContainerMatrixTest
     void cspWebAppNotFound() {
-        String expected = CSP.CSP_DEFAULT;
         given()
                 .spec(api.requestSpecification())
                 .basePath("/")
@@ -71,6 +78,6 @@ public class FiltersIT {
                 .get("streams")
                 .then()
                 .assertThat().header(CSPResponseFilter.CSP_HEADER,
-                        Matchers.equalTo(expected));
+                        Matchers.matchesPattern(defaultCSPPattern));
     }
 }

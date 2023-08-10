@@ -36,6 +36,7 @@ import org.graylog2.bindings.providers.HtmlSafeJmteEngineProvider;
 import org.graylog2.bindings.providers.SecureFreemarkerConfigProvider;
 import org.graylog2.bindings.providers.SystemJobFactoryProvider;
 import org.graylog2.bindings.providers.SystemJobManagerProvider;
+import org.graylog2.bootstrap.uncaughtexeptions.DefaultUncaughtExceptionHandlerCreator;
 import org.graylog2.cluster.ClusterConfigServiceImpl;
 import org.graylog2.cluster.leader.FakeLeaderElectionModule;
 import org.graylog2.cluster.leader.LeaderElectionModule;
@@ -78,6 +79,7 @@ import org.graylog2.shared.inputs.PersistedInputs;
 import org.graylog2.shared.messageq.MessageQueueModule;
 import org.graylog2.shared.metrics.jersey2.MetricsDynamicBinding;
 import org.graylog2.shared.rest.resources.csp.CSPDynamicFeature;
+import org.graylog2.shared.rest.resources.csp.CSPEventListener;
 import org.graylog2.shared.rest.resources.csp.CSPService;
 import org.graylog2.shared.rest.resources.csp.CSPServiceImpl;
 import org.graylog2.shared.security.RestrictToLeaderFeature;
@@ -177,6 +179,7 @@ public class ServerBindings extends Graylog2Module {
     }
 
     private void bindSingletons() {
+        bind(DefaultUncaughtExceptionHandlerCreator.class).asEagerSingleton();
         bind(SystemJobManager.class).toProvider(SystemJobManagerProvider.class);
         bind(DefaultSecurityManager.class).toProvider(DefaultSecurityManagerProvider.class).asEagerSingleton();
         bind(SystemJobFactory.class).toProvider(SystemJobFactoryProvider.class);
@@ -202,6 +205,7 @@ public class ServerBindings extends Graylog2Module {
         OptionalBinder.newOptionalBinder(binder(), TelemetryEnterpriseDataProvider.class).setDefault().to(DefaultTelemetryEnterpriseDataProvider.class);
 
         bind(CSPService.class).to(CSPServiceImpl.class).asEagerSingleton();
+        bind(CSPEventListener.class).asEagerSingleton();
     }
 
     private void bindDynamicFeatures() {
